@@ -12,7 +12,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: org.elasticsearch:elasticsearch:5.3.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-core:6.4.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.lucene:lucene-analyzers-common:6.4.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.lucene:lucene-backward-codecs:6.4.2" level="project" />
     <orderEntry type="library" name="Maven: org.apache.lucene:lucene-grouping:6.4.2" level="project" />
@@ -39,5 +38,6 @@
     <orderEntry type="library" name="Maven: com.tdunning:t-digest:3.0" level="project" />
     <orderEntry type="library" name="Maven: org.hdrhistogram:HdrHistogram:2.1.6" level="project" />
     <orderEntry type="library" name="Maven: net.java.dev.jna:jna:4.2.2" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.lucene:lucene-core:6.4.2" level="project" />
   </component>
 </module>
