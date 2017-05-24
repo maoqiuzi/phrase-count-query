@@ -554,7 +554,8 @@ final class PhraseCountScorer extends Scorer {
 
     @Override
     public float score() {
-        return docScorer.score(docID(), sloppyFreq);
+        return 1f;
+//        return docScorer.score(docID(), sloppyFreq);
     }
 
     @Override

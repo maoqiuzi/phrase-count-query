@@ -13,6 +13,7 @@
             <useTransitiveFiltering>true</useTransitiveFiltering>
             <excludes>
                 <exclude>org.elasticsearch:elasticsearch</exclude>
+                <exclude>org.apache.lucene:lucene-core</exclude>
             </excludes>
         </dependencySet>
     </dependencySets>
