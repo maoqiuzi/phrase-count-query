@@ -190,8 +190,8 @@ public class PhraseCountQuery extends Query {
     }
 
     private class PhraseWeight extends Weight {
-        private final Similarity similarity;
-        private final Similarity.SimWeight stats;
+//        private final Similarity similarity;
+//        private final Similarity.SimWeight stats;
         private final boolean needsScores;
         private transient TermContext states[];
 
@@ -205,7 +205,7 @@ public class PhraseCountQuery extends Query {
                 throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
             }
             this.needsScores = needsScores;
-            this.similarity = searcher.getSimilarity(needsScores);
+//            this.similarity = searcher.getSimilarity(needsScores);
             final IndexReaderContext context = searcher.getTopReaderContext();
             states = new TermContext[terms.length];
             TermStatistics termStats[] = new TermStatistics[terms.length];
@@ -214,7 +214,7 @@ public class PhraseCountQuery extends Query {
                 states[i] = TermContext.build(context, term);
                 termStats[i] = searcher.termStatistics(term, states[i]);
             }
-            stats = similarity.computeWeight(searcher.collectionStatistics(field), termStats);
+//            stats = similarity.computeWeight(searcher.collectionStatistics(field), termStats);
         }
 
         @Override
@@ -275,7 +275,6 @@ public class PhraseCountQuery extends Query {
             }
 
             return new PhraseCountScorer(this, postingsFreqs, slop,
-                    similarity.simScorer(stats, context),
                     needsScores, totalMatchCost);
         }
 

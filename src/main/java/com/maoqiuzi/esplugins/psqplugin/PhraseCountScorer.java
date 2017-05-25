@@ -36,7 +36,7 @@ final class PhraseCountScorer extends Scorer {
 
     private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
-    private final Similarity.SimScorer docScorer;
+//    private final Similarity.SimScorer docScorer;
 
     private final int slop;
     private final int numPostings;
@@ -55,10 +55,10 @@ final class PhraseCountScorer extends Scorer {
     private final float matchCost;
 
     PhraseCountScorer(Weight weight, PhraseCountQuery.PostingsAndFreq[] postings,
-                      int slop, Similarity.SimScorer docScorer, boolean needsScores,
+                      int slop, boolean needsScores,
                       float matchCost) {
         super(weight);
-        this.docScorer = docScorer;
+//        this.docScorer = docScorer;
         this.needsScores = needsScores;
         this.slop = slop;
         this.numPostings = postings==null ? 0 : postings.length;
@@ -107,7 +107,7 @@ final class PhraseCountScorer extends Scorer {
             }
             if (pp.position > next) { // done minimizing current match-length
                 if (matchLength <= slop) {
-                    freq += docScorer.computeSlopFactor(matchLength); // score match
+                    freq += computeSlopFactor(matchLength); // score match
                     numMatches++;
                     if (!needsScores) {
                         return freq;
@@ -125,10 +125,14 @@ final class PhraseCountScorer extends Scorer {
             }
         }
         if (matchLength <= slop) {
-            freq += docScorer.computeSlopFactor(matchLength); // score match
+            freq += computeSlopFactor(matchLength); // score match
             numMatches++;
         }
         return freq;
+    }
+
+    private float computeSlopFactor(int matchLength) {
+        return 1f;
     }
 
     /** advance a PhrasePosition and update 'end', return false if exhausted */
