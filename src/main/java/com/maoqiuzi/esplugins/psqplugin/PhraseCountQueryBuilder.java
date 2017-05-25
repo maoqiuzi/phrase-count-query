@@ -7,30 +7,34 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.ParsingException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
+import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.search.MatchQuery;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Created by maoqiuzi on 5/23/17.
  */
-public class PhraseCountQueryBuilder extends MatchPhraseQueryBuilder implements QueryBuilder {
+public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQueryBuilder> {
     private String analyzer;
     private int slop = MatchQuery.DEFAULT_PHRASE_SLOP;
     private final String fieldName;
+    public static final ParseField SLOP_FIELD = new ParseField("slop", "phrase_slop");
 
     private final Object value;
 
     public static final String NAME = "phrase_count_query";
 
     public PhraseCountQueryBuilder(String fieldName, Object value) {
-        super(fieldName, value);
         if (Strings.isEmpty(fieldName)) {
             throw new IllegalArgumentException("[" + NAME + "] requires fieldName");
         }
@@ -42,33 +46,89 @@ public class PhraseCountQueryBuilder extends MatchPhraseQueryBuilder implements 
     }
 
     public PhraseCountQueryBuilder(StreamInput in) throws IOException {
-        super(in);
         fieldName = in.readString();
         value = in.readGenericValue();
         slop = in.readVInt();
         analyzer = in.readOptionalString();
     }
 
-    protected Query doToQuery(QueryShardContext context) throws IOException {
-// validate context specific fields
-//        if (analyzer != null && context.getIndexAnalyzers().get(analyzer) == null) {
-//            throw new QueryShardException(context, "[" + NAME + "] analyzer [" + analyzer + "] not found");
-//        }
-//
-//        MatchQuery matchQuery = new MatchQuery(context);
-//        matchQuery.setAnalyzer(analyzer);
-//        matchQuery.setPhraseSlop(slop);
-//
-//        return matchQuery.parse(MatchQuery.Type.PHRASE, fieldName, value);
-        Analyzer analyzer = context.getMapperService().getIndexAnalyzers().get(this.analyzer);
-        if (analyzer == null) {
-            throw new IllegalArgumentException("No analyzer found for [" + this.analyzer + "]");
-        }
-        // validate context specific fields
-        if (analyzer != null && context.getIndexAnalyzers().get(this.analyzer) == null) {
-            throw new QueryShardException(context, "[" + NAME + "] analyzer [" + this.analyzer + "] not found");
-        }
+    @Override
+    protected void doWriteTo(StreamOutput out) throws IOException {
+        out.writeString(fieldName);
+        out.writeGenericValue(value);
+        out.writeVInt(slop);
+        out.writeOptionalString(analyzer);
+    }
 
+    @Override
+    protected void doXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startObject(NAME);
+        builder.startObject(fieldName);
+
+        builder.field(MatchQueryBuilder.QUERY_FIELD.getPreferredName(), value);
+        if (analyzer != null) {
+            builder.field(MatchQueryBuilder.ANALYZER_FIELD.getPreferredName(), analyzer);
+        }
+        builder.field(SLOP_FIELD.getPreferredName(), slop);
+        printBoostAndQueryName(builder);
+        builder.endObject();
+        builder.endObject();
+    }
+
+    @Override
+    protected boolean doEquals(PhraseCountQueryBuilder other) {
+        return Objects.equals(fieldName, other.fieldName) && Objects.equals(value, other.value) && Objects.equals(analyzer, other.analyzer)
+                && Objects.equals(slop, other.slop);
+    }
+
+    @Override
+    protected int doHashCode() {
+        return Objects.hash(fieldName, value, analyzer, slop);
+    }
+
+    @Override
+    public String getWriteableName() {
+        return NAME;
+    }
+
+    /**
+     * Explicitly set the analyzer to use. Defaults to use explicit mapping
+     * config for the field, or, if not set, the default search analyzer.
+     */
+    public PhraseCountQueryBuilder analyzer(String analyzer) {
+        this.analyzer = analyzer;
+        return this;
+    }
+
+    /** Get the analyzer to use, if previously set, otherwise <tt>null</tt> */
+    public String analyzer() {
+        return this.analyzer;
+    }
+
+    /** Sets a slop factor for phrase queries */
+    public PhraseCountQueryBuilder slop(int slop) {
+        if (slop < 0) {
+            throw new IllegalArgumentException("No negative slop allowed.");
+        }
+        this.slop = slop;
+        return this;
+    }
+
+    /** Get the slop factor for phrase queries. */
+    public int slop() {
+        return this.slop;
+    }
+
+    protected Query doToQuery(QueryShardContext context) throws IOException {
+//        Analyzer analyzer = context.getMapperService().getIndexAnalyzers().get(this.analyzer);
+//        if (analyzer == null) {
+//            throw new IllegalArgumentException("No analyzer found for [" + this.analyzer + "]");
+//        }
+        // validate context specific fields
+//        if (this.analyzer != null && context.getIndexAnalyzers().get(this.analyzer) == null) {
+//            throw new QueryShardException(context, "[" + NAME + "] analyzer [" + this.analyzer + "] not found");
+//        }
+        Analyzer analyzer = context.getMapperService().searchAnalyzer();
 
         PhraseCountQuery.PCQBuilder PCQBuilder = new PhraseCountQuery.PCQBuilder();
         PCQBuilder.setSlop(slop);
@@ -89,7 +149,7 @@ public class PhraseCountQueryBuilder extends MatchPhraseQueryBuilder implements 
 
     }
 
-    public static Optional<MatchPhraseQueryBuilder> fromXContent(QueryParseContext parseContext) throws IOException {
+    public static Optional<PhraseCountQueryBuilder> fromXContent(QueryParseContext parseContext) throws IOException {
         XContentParser parser = parseContext.parser();
         String fieldName = null;
         Object value = null;

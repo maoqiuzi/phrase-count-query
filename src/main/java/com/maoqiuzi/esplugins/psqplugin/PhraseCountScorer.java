@@ -525,28 +525,6 @@ final class PhraseCountScorer extends Scorer {
         return sloppyFreq;
     }
 
-//  private void printQueue(PrintStream ps, CustomPhrasePositions ext, String title) {
-//    //if (min.doc != ?) return;
-//    ps.println();
-//    ps.println("---- "+title);
-//    ps.println("EXT: "+ext);
-//    CustomPhrasePositions[] t = new CustomPhrasePositions[pq.size()];
-//    if (pq.size()>0) {
-//      t[0] = pq.pop();
-//      ps.println("  " + 0 + "  " + t[0]);
-//      for (int i=1; i<t.length; i++) {
-//        t[i] = pq.pop();
-//        assert t[i-1].position <= t[i].position;
-//        ps.println("  " + i + "  " + t[i]);
-//      }
-//      // add them back
-//      for (int i=t.length-1; i>=0; i--) {
-//        pq.add(t[i]);
-//      }
-//    }
-//  }
-
-
     @Override
     public int docID() {
         return conjunction.docID();
@@ -554,7 +532,7 @@ final class PhraseCountScorer extends Scorer {
 
     @Override
     public float score() {
-        return 1f;
+        return freq();
 //        return docScorer.score(docID(), sloppyFreq);
     }
 
