@@ -112,7 +112,7 @@ public class PhraseCountQuery extends Query {
         if (terms.length == 0) {
             return new MatchNoDocsQuery("empty PhraseCountQuery");
         } else if (terms.length == 1) {
-            return new TermQuery(terms[0]);
+            return new MatchNoDocsQuery("only 1 word provided in PhraseCountQuery");
         } else if (positions[0] != 0) {
             int[] newPositions = new int[positions.length];
             for (int i = 0; i < positions.length; ++i) {
@@ -205,7 +205,6 @@ public class PhraseCountQuery extends Query {
                 throw new IllegalStateException("PhraseWeight requires that the first position is 0, call rewrite first");
             }
             this.needsScores = needsScores;
-//            this.similarity = searcher.getSimilarity(needsScores);
             final IndexReaderContext context = searcher.getTopReaderContext();
             states = new TermContext[terms.length];
             TermStatistics termStats[] = new TermStatistics[terms.length];
@@ -214,7 +213,6 @@ public class PhraseCountQuery extends Query {
                 states[i] = TermContext.build(context, term);
                 termStats[i] = searcher.termStatistics(term, states[i]);
             }
-//            stats = similarity.computeWeight(searcher.collectionStatistics(field), termStats);
         }
 
         @Override

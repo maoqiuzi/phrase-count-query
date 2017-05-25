@@ -3,7 +3,6 @@ package com.maoqiuzi.esplugins.psqplugin;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
@@ -28,9 +27,11 @@ import java.util.Optional;
  */
 public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQueryBuilder> {
     private String analyzer;
-    private int slop = MatchQuery.DEFAULT_PHRASE_SLOP;
+    private int slop = 0;
     private final String fieldName;
     public static final ParseField SLOP_FIELD = new ParseField("slop", "phrase_slop");
+    public static final ParseField ANALYZER_FIELD = new ParseField("analyzer");
+    public static final ParseField QUERY_FIELD = new ParseField("query");
 
 
     private final Object value;
@@ -68,9 +69,9 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         builder.startObject(NAME);
         builder.startObject(fieldName);
 
-        builder.field(MatchQueryBuilder.QUERY_FIELD.getPreferredName(), value);
+        builder.field(QUERY_FIELD.getPreferredName(), value);
         if (analyzer != null) {
-            builder.field(MatchQueryBuilder.ANALYZER_FIELD.getPreferredName(), analyzer);
+            builder.field(ANALYZER_FIELD.getPreferredName(), analyzer);
         }
         builder.field(SLOP_FIELD.getPreferredName(), slop);
         printBoostAndQueryName(builder);

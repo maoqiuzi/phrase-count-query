@@ -1,8 +1,5 @@
 package com.maoqiuzi.esplugins.psqplugin;
 
-/**
- * Created by maoqiuzi on 5/24/17.
- */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,7 +19,6 @@ package com.maoqiuzi.esplugins.psqplugin;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.FixedBitSet;
 
 import java.io.IOException;
@@ -36,7 +32,6 @@ final class PhraseCountScorer extends Scorer {
 
     private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
 
-//    private final Similarity.SimScorer docScorer;
 
     private final int slop;
     private final int numPostings;
@@ -132,7 +127,7 @@ final class PhraseCountScorer extends Scorer {
     }
 
     private float computeSlopFactor(int matchLength) {
-        return 1f;
+        return 1.0f / (matchLength + 1);
     }
 
     /** advance a PhrasePosition and update 'end', return false if exhausted */
