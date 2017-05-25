@@ -55,75 +55,7 @@ import java.util.*;
  */
 public class PhraseCountQuery extends Query {
 
-    /** A builder for phrase queries. */
-    public static class PCQBuilder {
 
-        private int slop;
-        private final List<Term> terms;
-        private final List<Integer> positions;
-
-        /** Sole constructor. */
-        public PCQBuilder() {
-            slop = 0;
-            terms = new ArrayList<>();
-            positions = new ArrayList<>();
-        }
-
-        /**
-         * Set the slop.
-         * @see PhraseCountQuery#getSlop()
-         */
-        public PCQBuilder setSlop(int slop) {
-            this.slop = slop;
-            return this;
-        }
-
-        /**
-         * Adds a term to the end of the query phrase.
-         * The relative position of the term is the one immediately after the last term added.
-         */
-        public PCQBuilder add(Term term) {
-            return add(term, positions.isEmpty() ? 0 : 1 + positions.get(positions.size() - 1));
-        }
-
-        /**
-         * Adds a term to the end of the query phrase.
-         * The relative position of the term within the phrase is specified explicitly, but must be greater than
-         * or equal to that of the previously added term.
-         * A greater position allows phrases with gaps (e.g. in connection with stopwords).
-
-         */
-        public PCQBuilder add(Term term, int position) {
-            if (position < 0) {
-                throw new IllegalArgumentException("Positions must be >= 0, got " + position);
-            }
-            if (positions.isEmpty() == false) {
-                final int lastPosition = positions.get(positions.size() - 1);
-                if (position < lastPosition) {
-                    throw new IllegalArgumentException("Positions must be added in order, got " + position + " after " + lastPosition);
-                }
-            }
-            if (terms.isEmpty() == false && term.field().equals(terms.get(0).field()) == false) {
-                throw new IllegalArgumentException("All terms must be on the same field, got " + term.field() + " and " + terms.get(0).field());
-            }
-            terms.add(term);
-            positions.add(position);
-            return this;
-        }
-
-        /**
-         * Build a phrase query based on the terms that have been added.
-         */
-        public PhraseCountQuery build() {
-            Term[] terms = this.terms.toArray(new Term[this.terms.size()]);
-            int[] positions = new int[this.positions.size()];
-            for (int i = 0; i < positions.length; ++i) {
-                positions[i] = this.positions.get(i);
-            }
-            return new PhraseCountQuery(slop, terms, positions);
-        }
-
-    }
 
     private final int slop;
     private final String field;
@@ -137,22 +69,7 @@ public class PhraseCountQuery extends Query {
         if (slop < 0) {
             throw new IllegalArgumentException("Slop must be >= 0, got " + slop);
         }
-        for (int i = 1; i < terms.length; ++i) {
-            if (terms[i-1].field().equals(terms[i].field()) == false) {
-                throw new IllegalArgumentException("All terms should have the same field");
-            }
-        }
-        for (int position : positions) {
-            if (position < 0) {
-                throw new IllegalArgumentException("Positions must be >= 0, got " + position);
-            }
-        }
-        for (int i = 1; i < positions.length; ++i) {
-            if (positions[i] < positions[i - 1]) {
-                throw new IllegalArgumentException("Positions should not go backwards, got "
-                        + positions[i-1] + " before " + positions[i]);
-            }
-        }
+
         this.slop = slop;
         this.terms = terms;
         this.positions = positions;
@@ -167,58 +84,14 @@ public class PhraseCountQuery extends Query {
         return positions;
     }
 
-    private static Term[] toTerms(String field, String... termStrings) {
-        Term[] terms = new Term[termStrings.length];
-        for (int i = 0; i < terms.length; ++i) {
-            terms[i] = new Term(field, termStrings[i]);
-        }
-        return terms;
-    }
-
-    private static Term[] toTerms(String field, BytesRef... termBytes) {
-        Term[] terms = new Term[termBytes.length];
-        for (int i = 0; i < terms.length; ++i) {
-            terms[i] = new Term(field, termBytes[i]);
-        }
-        return terms;
-    }
-
     /**
      * Create a phrase query which will match documents that contain the given
      * list of terms at consecutive positions in {@code field}, and at a
-     * maximum edit distance of {@code slop}. For more complicated use-cases,
-     * use {@link PCQBuilder}.
+     * maximum edit distance of {@code slop}.
      * @see #getSlop()
      */
-    public PhraseCountQuery(int slop, String field, String... terms) {
-        this(slop, toTerms(field, terms), incrementalPositions(terms.length));
-    }
-
-    /**
-     * Create a phrase query which will match documents that contain the given
-     * list of terms at consecutive positions in {@code field}.
-     */
-    public PhraseCountQuery(String field, String... terms) {
-        this(0, field, terms);
-    }
-
-    /**
-     * Create a phrase query which will match documents that contain the given
-     * list of terms at consecutive positions in {@code field}, and at a
-     * maximum edit distance of {@code slop}. For more complicated use-cases,
-     * use {@link PCQBuilder}.
-     * @see #getSlop()
-     */
-    public PhraseCountQuery(int slop, String field, BytesRef... terms) {
-        this(slop, toTerms(field, terms), incrementalPositions(terms.length));
-    }
-
-    /**
-     * Create a phrase query which will match documents that contain the given
-     * list of terms at consecutive positions in {@code field}.
-     */
-    public PhraseCountQuery(String field, BytesRef... terms) {
-        this(0, field, terms);
+    public PhraseCountQuery(int slop, Term... terms) {
+        this(slop, terms, incrementalPositions(terms.length));
     }
 
     /**

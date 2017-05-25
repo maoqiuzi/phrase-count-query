@@ -18,6 +18,8 @@ import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.search.MatchQuery;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -29,6 +31,9 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
     private int slop = MatchQuery.DEFAULT_PHRASE_SLOP;
     private final String fieldName;
     public static final ParseField SLOP_FIELD = new ParseField("slop", "phrase_slop");
+
+    private final List<Term> terms;
+    private final List<Integer> positions;
 
     private final Object value;
 
@@ -43,6 +48,8 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         }
         this.fieldName = fieldName;
         this.value = value;
+        terms = new ArrayList<>();
+        positions = new ArrayList<>();
     }
 
     public PhraseCountQueryBuilder(StreamInput in) throws IOException {
@@ -50,6 +57,8 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         value = in.readGenericValue();
         slop = in.readVInt();
         analyzer = in.readOptionalString();
+        terms = new ArrayList<>();
+        positions = new ArrayList<>();
     }
 
     @Override
@@ -120,35 +129,25 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
     }
 
     protected Query doToQuery(QueryShardContext context) throws IOException {
-//        Analyzer analyzer = context.getMapperService().getIndexAnalyzers().get(this.analyzer);
-//        if (analyzer == null) {
-//            throw new IllegalArgumentException("No analyzer found for [" + this.analyzer + "]");
-//        }
-        // validate context specific fields
-//        if (this.analyzer != null && context.getIndexAnalyzers().get(this.analyzer) == null) {
-//            throw new QueryShardException(context, "[" + NAME + "] analyzer [" + this.analyzer + "] not found");
-//        }
         Analyzer analyzer = context.getMapperService().searchAnalyzer();
 
-        PhraseCountQuery.PCQBuilder PCQBuilder = new PhraseCountQuery.PCQBuilder();
-        PCQBuilder.setSlop(slop);
         try (TokenStream source = analyzer.tokenStream(fieldName, value.toString())) {
             CachingTokenFilter stream = new CachingTokenFilter(source);
             TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-            PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
-            int position = -1;
+            if (termAtt == null) {
+                return null;
+            }
             stream.reset();
             while (stream.incrementToken()) {
-                position += 1;
-                PCQBuilder.add(new Term(fieldName, termAtt.getBytesRef()), position);
+                terms.add(new Term(fieldName, termAtt.getBytesRef()));
             }
-            return PCQBuilder.build();
+            return new PhraseCountQuery(slop, this.terms.toArray(new Term[this.terms.size()]));
         } catch (IOException e) {
             throw new RuntimeException("Error analyzing query text", e);
         }
 
     }
-
+    //XSON (maps to Content-Type application/xson) is an optimized binary representation of JSON.
     public static Optional<PhraseCountQueryBuilder> fromXContent(QueryParseContext parseContext) throws IOException {
         XContentParser parser = parseContext.parser();
         String fieldName = null;
