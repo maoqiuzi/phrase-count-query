@@ -525,6 +525,8 @@ final class PhraseCountScorer extends Scorer {
         return sloppyFreq;
     }
 
+
+
     @Override
     public int docID() {
         return conjunction.docID();

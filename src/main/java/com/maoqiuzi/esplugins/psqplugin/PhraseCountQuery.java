@@ -33,25 +33,6 @@ import java.util.*;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseCountQuery is built by QueryParser for input like <code>"new york"</code>.
- *
- * <p>This query may be combined with other terms or queries with a {@link BooleanQuery}.
- *
- * <p><b>NOTE</b>:
- * <br >Also, Leading holes don't have any particular meaning for this query
- * and will be ignored. For instance this query:
- * <pre class="prettyprint">
- * PhraseCountQuery.PCQBuilder builder = new PhraseCountQuery.PCQBuilder();
- * builder.add(new Term("body", "one"), 4);
- * builder.add(new Term("body", "two"), 5);
- * PhraseCountQuery pq = builder.build();
- * </pre>
- * is equivalent to the below query:
- * <pre class="prettyprint">
- * PhraseCountQuery.PCQBuilder builder = new PhraseCountQuery.PCQBuilder();
- * builder.add(new Term("body", "one"), 0);
- * builder.add(new Term("body", "two"), 1);
- * PhraseCountQuery pq = builder.build();
- * </pre>
  */
 public class PhraseCountQuery extends Query {
 
@@ -244,14 +225,16 @@ public class PhraseCountQuery extends Query {
         @Override
         public String toString() { return "weight(" + PhraseCountQuery.this + ")"; }
 
+        // not used
         @Override
         public float getValueForNormalization() {
-            return stats.getValueForNormalization();
+            return 1f;
         }
 
+        // not used
         @Override
         public void normalize(float queryNorm, float boost) {
-            stats.normalize(queryNorm, boost);
+            ;
         }
 
         @Override
@@ -307,14 +290,8 @@ public class PhraseCountQuery extends Query {
             if (scorer != null) {
                 int newDoc = scorer.iterator().advance(doc);
                 if (newDoc == doc) {
-                    float freq = slop == 0 ? scorer.freq() : ((PhraseCountScorer)scorer).sloppyFreq();
-                    Similarity.SimScorer docScorer = similarity.simScorer(stats, context);
-                    Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
-                    Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
-                    return Explanation.match(
-                            scoreExplanation.getValue(),
-                            "weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:",
-                            scoreExplanation);
+//                    float freq = slop == 0 ? scorer.freq() : ((PhraseCountScorer)scorer).sloppyFreq();
+                    return Explanation.match(scorer.freq(), "phrase frequency");
                 }
             }
 
