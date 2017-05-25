@@ -50,11 +50,6 @@ public class PhraseCountQuery extends Query {
         if (slop < 0) {
             throw new IllegalArgumentException("Slop must be >= 0, got " + slop);
         }
-        if (positions.length < 2) {
-            // TODO: 5/25/17 should provide word count query, then will be rewritten in rewrite
-            throw new IllegalArgumentException("Must have more than 2 words in PhraseCountQuery, got " + positions.length);
-        }
-
         this.slop = slop;
         this.terms = terms;
         this.positions = positions;
@@ -116,8 +111,7 @@ public class PhraseCountQuery extends Query {
         if (terms.length == 0) {
             return new MatchNoDocsQuery("empty PhraseCountQuery");
         } else if (terms.length == 1) {
-            // TODO: 5/25/17 should provide word count query
-            return new MatchNoDocsQuery("only 1 word provided in PhraseCountQuery");
+            return new TermCountQuery(terms[0]);
         } else if (positions[0] != 0) {
             int[] newPositions = new int[positions.length];
             for (int i = 0; i < positions.length; ++i) {
@@ -195,8 +189,6 @@ public class PhraseCountQuery extends Query {
     }
 
     private class PhraseWeight extends Weight {
-//        private final Similarity similarity;
-//        private final Similarity.SimWeight stats;
         private final boolean needsScores;
         private transient TermContext states[];
 
@@ -292,7 +284,6 @@ public class PhraseCountQuery extends Query {
             if (scorer != null) {
                 int newDoc = scorer.iterator().advance(doc);
                 if (newDoc == doc) {
-//                    float freq = slop == 0 ? scorer.freq() : ((PhraseCountScorer)scorer).sloppyFreq();
                     return Explanation.match(scorer.freq(), "phrase frequency");
                 }
             }

@@ -53,7 +53,6 @@ final class PhraseCountScorer extends Scorer {
                       int slop, boolean needsScores,
                       float matchCost) {
         super(weight);
-//        this.docScorer = docScorer;
         this.needsScores = needsScores;
         this.slop = slop;
         this.numPostings = postings==null ? 0 : postings.length;
