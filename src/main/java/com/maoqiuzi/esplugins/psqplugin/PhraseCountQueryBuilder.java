@@ -32,8 +32,6 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
     private final String fieldName;
     public static final ParseField SLOP_FIELD = new ParseField("slop", "phrase_slop");
 
-    private final List<Term> terms;
-    private final List<Integer> positions;
 
     private final Object value;
 
@@ -48,8 +46,6 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         }
         this.fieldName = fieldName;
         this.value = value;
-        terms = new ArrayList<>();
-        positions = new ArrayList<>();
     }
 
     public PhraseCountQueryBuilder(StreamInput in) throws IOException {
@@ -57,8 +53,6 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         value = in.readGenericValue();
         slop = in.readVInt();
         analyzer = in.readOptionalString();
-        terms = new ArrayList<>();
-        positions = new ArrayList<>();
     }
 
     @Override
@@ -137,11 +131,12 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
             if (termAtt == null) {
                 return null;
             }
+            List<Term> terms = new ArrayList<>();
             stream.reset();
             while (stream.incrementToken()) {
                 terms.add(new Term(fieldName, termAtt.getBytesRef()));
             }
-            return new PhraseCountQuery(slop, this.terms.toArray(new Term[this.terms.size()]));
+            return new PhraseCountQuery(slop, terms.toArray(new Term[terms.size()]));
         } catch (IOException e) {
             throw new RuntimeException("Error analyzing query text", e);
         }
