@@ -32,9 +32,11 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
     public static final ParseField SLOP_FIELD = new ParseField("slop", "phrase_slop");
     public static final ParseField ANALYZER_FIELD = new ParseField("analyzer");
     public static final ParseField QUERY_FIELD = new ParseField("query");
+    public static final ParseField WEIGHTED_COUNT_FIELD = new ParseField("weighted_count");
 
 
     private final String value;
+    private boolean weightedCount = false;
 
     public static final String NAME = "phrase_count_query";
 
@@ -67,6 +69,7 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         value = in.readString();
         slop = in.readVInt();
         analyzer = in.readOptionalString();
+        weightedCount = in.readOptionalBoolean();
     }
 
     @Override
@@ -75,32 +78,36 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         out.writeString(value);
         out.writeVInt(slop);
         out.writeOptionalString(analyzer);
+        out.writeOptionalBoolean(weightedCount);
     }
 
     @Override
     protected void doXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(NAME);
-//        builder.startObject(fieldName);
+        builder.startObject(fieldName);
 
-//        builder.field(QUERY_FIELD.getPreferredName(), value);
-//        if (analyzer != null) {
-//            builder.field(ANALYZER_FIELD.getPreferredName(), analyzer);
-//        }
+        builder.field(QUERY_FIELD.getPreferredName(), value);
+        if (analyzer != null) {
+            builder.field(ANALYZER_FIELD.getPreferredName(), analyzer);
+        }
         builder.field(SLOP_FIELD.getPreferredName(), slop);
-//        printBoostAndQueryName(builder);
-//        builder.endObject();
+        builder.field(WEIGHTED_COUNT_FIELD.getPreferredName(), weightedCount);
+        printBoostAndQueryName(builder);
+        builder.endObject();
         builder.endObject();
     }
 
     @Override
     protected boolean doEquals(PhraseCountQueryBuilder other) {
-        return Objects.equals(analyzer, other.analyzer)
+        return Objects.equals(fieldName, other.fieldName) &&
+                Objects.equals(value, other.value) &&
+                Objects.equals(analyzer, other.analyzer)
                 && Objects.equals(slop, other.slop);
     }
 
     @Override
     protected int doHashCode() {
-        return Objects.hash(analyzer, slop);
+        return Objects.hash(fieldName, value, analyzer, slop);
     }
 
     @Override
@@ -136,6 +143,14 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         return this.slop;
     }
 
+    public boolean weightedCount() {
+        return this.weightedCount;
+    }
+
+    public void weightedCount(boolean weightedCount) {
+        this.weightedCount = weightedCount;
+    }
+
     protected Query doToQuery(QueryShardContext context) throws IOException {
         Analyzer analyzer = context.getMapperService().searchAnalyzer();
 //        List<Term> terms = new ArrayList<>();
@@ -151,7 +166,7 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
             while (stream.incrementToken()) {
                 terms.add(new Term(fieldName, termAtt.getBytesRef()));
             }
-            return new PhraseCountQuery(slop, terms.toArray(new Term[terms.size()]));
+            return new PhraseCountQuery(slop, weightedCount, terms.toArray(new Term[terms.size()]));
         } catch (IOException e) {
             throw new RuntimeException("Error analyzing query text", e);
         }
@@ -165,6 +180,7 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         float boost = AbstractQueryBuilder.DEFAULT_BOOST;
         String analyzer = null;
         int slop = MatchQuery.DEFAULT_PHRASE_SLOP;
+        boolean weightedCount = false;
         String queryName = null;
         String currentFieldName = null;
         XContentParser.Token token;
@@ -180,10 +196,12 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
                     if (token == XContentParser.Token.FIELD_NAME) {
                         currentFieldName = parser.currentName();
                     } else if (token.isValue()) {
-                        if (MatchQueryBuilder.QUERY_FIELD.match(currentFieldName)) {
+                        if (PhraseCountQueryBuilder.QUERY_FIELD.match(currentFieldName)) {
                             value = parser.objectText();
-                        } else if (MatchQueryBuilder.ANALYZER_FIELD.match(currentFieldName)) {
+                        } else if (PhraseCountQueryBuilder.ANALYZER_FIELD.match(currentFieldName)) {
                             analyzer = parser.text();
+                        } else if (PhraseCountQueryBuilder.WEIGHTED_COUNT_FIELD.match(currentFieldName)) {
+                            weightedCount = parser.booleanValue();
                         } else if (AbstractQueryBuilder.BOOST_FIELD.match(currentFieldName)) {
                             boost = parser.floatValue();
                         } else if (SLOP_FIELD.match(currentFieldName)) {
@@ -209,6 +227,7 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         PhraseCountQueryBuilder matchQuery = new PhraseCountQueryBuilder(fieldName, value);
         matchQuery.analyzer(analyzer);
         matchQuery.slop(slop);
+        matchQuery.weightedCount(weightedCount);
         matchQuery.queryName(queryName);
         matchQuery.boost(boost);
         return Optional.of(matchQuery);

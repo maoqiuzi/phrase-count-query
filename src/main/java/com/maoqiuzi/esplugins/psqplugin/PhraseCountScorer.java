@@ -48,12 +48,14 @@ final class PhraseCountScorer extends Scorer {
     private int numMatches;
     final boolean needsScores;
     private final float matchCost;
+    private final boolean weightedCount;
 
     PhraseCountScorer(Weight weight, PhraseCountQuery.PostingsAndFreq[] postings,
-                      int slop, boolean needsScores,
+                      int slop, boolean needsScores, boolean weightedCount,
                       float matchCost) {
         super(weight);
         this.needsScores = needsScores;
+        this.weightedCount = weightedCount;
         this.slop = slop;
         this.numPostings = postings==null ? 0 : postings.length;
         pq = new CustomPhraseQueue(postings.length);
@@ -519,7 +521,7 @@ final class PhraseCountScorer extends Scorer {
         return numMatches;
     }
 
-    float sloppyFreq() {
+    public float sloppyFreq() {
         return sloppyFreq;
     }
 
@@ -532,6 +534,9 @@ final class PhraseCountScorer extends Scorer {
 
     @Override
     public float score() {
+        if (weightedCount) {
+            return sloppyFreq();
+        }
         return freq();
 //        return docScorer.score(docID(), sloppyFreq);
     }

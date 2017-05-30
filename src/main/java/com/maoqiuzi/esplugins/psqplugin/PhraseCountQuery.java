@@ -42,8 +42,9 @@ public class PhraseCountQuery extends Query {
     private final String field;
     private final Term[] terms;
     private final int[] positions;
+    private final boolean weightedCount;
 
-    private PhraseCountQuery(int slop, Term[] terms, int[] positions) {
+    private PhraseCountQuery(int slop, boolean weightedCount, Term[] terms, int[] positions) {
         if (terms.length != positions.length) {
             throw new IllegalArgumentException("Must have as many terms as positions");
         }
@@ -51,6 +52,7 @@ public class PhraseCountQuery extends Query {
             throw new IllegalArgumentException("Slop must be >= 0, got " + slop);
         }
         this.slop = slop;
+        this.weightedCount = weightedCount;
         this.terms = terms;
         this.positions = positions;
         this.field = terms.length == 0 ? null : terms[0].field();
@@ -70,8 +72,8 @@ public class PhraseCountQuery extends Query {
      * maximum edit distance of {@code slop}.
      * @see #getSlop()
      */
-    public PhraseCountQuery(int slop, Term... terms) {
-        this(slop, terms, incrementalPositions(terms.length));
+    public PhraseCountQuery(int slop, boolean weightedCount, Term... terms) {
+        this(slop, weightedCount, terms, incrementalPositions(terms.length));
     }
 
     /**
@@ -117,7 +119,7 @@ public class PhraseCountQuery extends Query {
             for (int i = 0; i < positions.length; ++i) {
                 newPositions[i] = positions[i] - positions[0];
             }
-            return new PhraseCountQuery(slop, terms, newPositions);
+            return new PhraseCountQuery(slop, weightedCount, terms, newPositions);
         } else {
             return super.rewrite(reader);
         }
@@ -270,7 +272,7 @@ public class PhraseCountQuery extends Query {
             }
 
             return new PhraseCountScorer(this, postingsFreqs, slop,
-                    needsScores, totalMatchCost);
+                    needsScores, weightedCount, totalMatchCost);
         }
 
         // only called from assert
@@ -284,6 +286,9 @@ public class PhraseCountQuery extends Query {
             if (scorer != null) {
                 int newDoc = scorer.iterator().advance(doc);
                 if (newDoc == doc) {
+                    if (weightedCount) {
+                        return Explanation.match(((PhraseCountScorer)scorer).sloppyFreq(), "sloppy frequency");
+                    }
                     return Explanation.match(scorer.freq(), "phrase frequency");
                 }
             }
@@ -390,6 +395,7 @@ public class PhraseCountQuery extends Query {
 
     private boolean equalsTo(PhraseCountQuery other) {
         return slop == other.slop &&
+                weightedCount == other.weightedCount &&
                 Arrays.equals(terms, other.terms) &&
                 Arrays.equals(positions, other.positions);
     }
@@ -401,6 +407,8 @@ public class PhraseCountQuery extends Query {
         h = 31 * h + slop;
         h = 31 * h + Arrays.hashCode(terms);
         h = 31 * h + Arrays.hashCode(positions);
+        int t = (weightedCount) ? 1 : 0;
+        h = 31 * h + t;
         return h;
     }
 
