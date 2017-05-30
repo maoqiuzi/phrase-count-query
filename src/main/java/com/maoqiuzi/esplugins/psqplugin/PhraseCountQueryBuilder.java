@@ -28,13 +28,13 @@ import java.util.Optional;
 public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQueryBuilder> {
     private String analyzer;
     private int slop = 0;
-    private final String fieldName;
+//    private final String fieldName;
     public static final ParseField SLOP_FIELD = new ParseField("slop", "phrase_slop");
     public static final ParseField ANALYZER_FIELD = new ParseField("analyzer");
     public static final ParseField QUERY_FIELD = new ParseField("query");
 
 
-    private final Object value;
+//    private final String value;
 
     public static final String NAME = "phrase_count_query";
 
@@ -45,49 +45,62 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         if (value == null) {
             throw new IllegalArgumentException("[" + NAME + "] requires query value");
         }
-        this.fieldName = fieldName;
-        this.value = value;
+//        this.fieldName = fieldName;
+//        this.value = value.toString();
+    }
+
+    public PhraseCountQueryBuilder(String fieldName, int slop, String... terms) {
+        if (Strings.isEmpty(fieldName)) {
+            throw new IllegalArgumentException("[" + NAME + "] requires fieldName");
+        }
+        if (terms == null) {
+            throw new IllegalArgumentException("[" + NAME + "] requires terms");
+        }
+//        this.fieldName = fieldName;
+//        this.value = String.join(" ", terms);
+        this.slop = slop;
     }
 
     public PhraseCountQueryBuilder(StreamInput in) throws IOException {
-        fieldName = in.readString();
-        value = in.readGenericValue();
-        slop = in.readVInt();
-        analyzer = in.readOptionalString();
+        super(in);
+//        fieldName = in.readString();
+//        value = in.readString();
+//        slop = in.readVInt();
+//        analyzer = in.readOptionalString();
     }
 
     @Override
     protected void doWriteTo(StreamOutput out) throws IOException {
-        out.writeString(fieldName);
-        out.writeGenericValue(value);
-        out.writeVInt(slop);
-        out.writeOptionalString(analyzer);
+//        out.writeString(fieldName);
+//        out.writeString(value);
+//        out.writeVInt(slop);
+//        out.writeOptionalString(analyzer);
     }
 
     @Override
     protected void doXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(NAME);
-        builder.startObject(fieldName);
+//        builder.startObject(fieldName);
 
-        builder.field(QUERY_FIELD.getPreferredName(), value);
-        if (analyzer != null) {
-            builder.field(ANALYZER_FIELD.getPreferredName(), analyzer);
-        }
-        builder.field(SLOP_FIELD.getPreferredName(), slop);
-        printBoostAndQueryName(builder);
-        builder.endObject();
+//        builder.field(QUERY_FIELD.getPreferredName(), value);
+//        if (analyzer != null) {
+//            builder.field(ANALYZER_FIELD.getPreferredName(), analyzer);
+//        }
+//        builder.field(SLOP_FIELD.getPreferredName(), slop);
+//        printBoostAndQueryName(builder);
+//        builder.endObject();
         builder.endObject();
     }
 
     @Override
     protected boolean doEquals(PhraseCountQueryBuilder other) {
-        return Objects.equals(fieldName, other.fieldName) && Objects.equals(value, other.value) && Objects.equals(analyzer, other.analyzer)
+        return Objects.equals(analyzer, other.analyzer)
                 && Objects.equals(slop, other.slop);
     }
 
     @Override
     protected int doHashCode() {
-        return Objects.hash(fieldName, value, analyzer, slop);
+        return Objects.hash(analyzer, slop);
     }
 
     @Override
@@ -125,22 +138,23 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
 
     protected Query doToQuery(QueryShardContext context) throws IOException {
         Analyzer analyzer = context.getMapperService().searchAnalyzer();
-
-        try (TokenStream source = analyzer.tokenStream(fieldName, value.toString())) {
-            CachingTokenFilter stream = new CachingTokenFilter(source);
-            TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-            if (termAtt == null) {
-                return null;
-            }
-            List<Term> terms = new ArrayList<>();
-            stream.reset();
-            while (stream.incrementToken()) {
-                terms.add(new Term(fieldName, termAtt.getBytesRef()));
-            }
-            return new PhraseCountQuery(slop, terms.toArray(new Term[terms.size()]));
-        } catch (IOException e) {
-            throw new RuntimeException("Error analyzing query text", e);
-        }
+        List<Term> terms = new ArrayList<>();
+        return new PhraseCountQuery(slop, terms.toArray(new Term[terms.size()]));
+//        try (TokenStream source = analyzer.tokenStream(fieldName, value.toString())) {
+//            CachingTokenFilter stream = new CachingTokenFilter(source);
+//            TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
+//            if (termAtt == null) {
+//                return null;
+//            }
+//            List<Term> terms = new ArrayList<>();
+//            stream.reset();
+//            while (stream.incrementToken()) {
+//                terms.add(new Term(fieldName, termAtt.getBytesRef()));
+//            }
+//            return new PhraseCountQuery(slop, terms.toArray(new Term[terms.size()]));
+//        } catch (IOException e) {
+//            throw new RuntimeException("Error analyzing query text", e);
+//        }
 
     }
     //XSON (maps to Content-Type application/xson) is an optimized binary representation of JSON.
