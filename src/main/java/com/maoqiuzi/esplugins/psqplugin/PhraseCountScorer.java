@@ -124,6 +124,7 @@ final class PhraseCountScorer extends Scorer {
             freq += computeSlopFactor(matchLength); // score match
             numMatches++;
         }
+
         return freq;
     }
 

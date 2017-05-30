@@ -287,9 +287,9 @@ public class PhraseCountQuery extends Query {
                 int newDoc = scorer.iterator().advance(doc);
                 if (newDoc == doc) {
                     if (weightedCount) {
-                        return Explanation.match(((PhraseCountScorer)scorer).sloppyFreq(), "sloppy frequency");
+                        return Explanation.match((scorer).score(), "sloppy frequency");
                     }
-                    return Explanation.match(scorer.freq(), "phrase frequency");
+                    return Explanation.match(scorer.score(), "phrase frequency");
                 }
             }
 

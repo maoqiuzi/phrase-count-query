@@ -51,7 +51,7 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         this.value = value.toString();
     }
 
-    public PhraseCountQueryBuilder(String fieldName, int slop, String... terms) {
+    public PhraseCountQueryBuilder(String fieldName, int slop, boolean weightedCount, String... terms) {
         if (Strings.isEmpty(fieldName)) {
             throw new IllegalArgumentException("[" + NAME + "] requires fieldName");
         }
@@ -60,6 +60,7 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         }
         this.fieldName = fieldName;
         this.value = String.join(" ", terms);
+        this.weightedCount = weightedCount;
         this.slop = slop;
     }
 
@@ -68,8 +69,8 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         fieldName = in.readString();
         value = in.readString();
         slop = in.readVInt();
+        weightedCount = in.readBoolean();
         analyzer = in.readOptionalString();
-        weightedCount = in.readOptionalBoolean();
     }
 
     @Override
@@ -77,8 +78,8 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
         out.writeString(fieldName);
         out.writeString(value);
         out.writeVInt(slop);
+        out.writeBoolean(weightedCount);
         out.writeOptionalString(analyzer);
-        out.writeOptionalBoolean(weightedCount);
     }
 
     @Override
@@ -198,11 +199,11 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
                     } else if (token.isValue()) {
                         if (PhraseCountQueryBuilder.QUERY_FIELD.match(currentFieldName)) {
                             value = parser.objectText();
-                        } else if (PhraseCountQueryBuilder.ANALYZER_FIELD.match(currentFieldName)) {
+                        } else if (ANALYZER_FIELD.match(currentFieldName)) {
                             analyzer = parser.text();
-                        } else if (PhraseCountQueryBuilder.WEIGHTED_COUNT_FIELD.match(currentFieldName)) {
+                        } else if (WEIGHTED_COUNT_FIELD.match(currentFieldName)) {
                             weightedCount = parser.booleanValue();
-                        } else if (AbstractQueryBuilder.BOOST_FIELD.match(currentFieldName)) {
+                        } else if (BOOST_FIELD.match(currentFieldName)) {
                             boost = parser.floatValue();
                         } else if (SLOP_FIELD.match(currentFieldName)) {
                             slop = parser.intValue();
@@ -224,13 +225,13 @@ public class PhraseCountQueryBuilder extends AbstractQueryBuilder<PhraseCountQue
             }
         }
 
-        PhraseCountQueryBuilder matchQuery = new PhraseCountQueryBuilder(fieldName, value);
-        matchQuery.analyzer(analyzer);
-        matchQuery.slop(slop);
-        matchQuery.weightedCount(weightedCount);
-        matchQuery.queryName(queryName);
-        matchQuery.boost(boost);
-        return Optional.of(matchQuery);
+        PhraseCountQueryBuilder phraseCountQuery = new PhraseCountQueryBuilder(fieldName, value);
+        phraseCountQuery.analyzer(analyzer);
+        phraseCountQuery.slop(slop);
+        phraseCountQuery.weightedCount(weightedCount);
+        phraseCountQuery.queryName(queryName);
+        phraseCountQuery.boost(boost);
+        return Optional.of(phraseCountQuery);
     }
 
 }
