@@ -1,6 +1,7 @@
 # phrase-count-query
 
 Elasticsearch provided several similarity scores by default. However, sometimes one might need to use raw count of phrase for his own purpose. This plugin provides a query that would return the count of some phrase.
+Most of the codes come from original lucene with some changes made.
 
 ## Usage
 
